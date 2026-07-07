@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Dynastica Auction Stats</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { 
+            background: #0d0d12; 
+            color: #e0e0e0; 
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        /* Шапка */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #1a1a24;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #2a2a3a;
+        }
+        .header h1 { color: #fff; font-size: 24px; }
+        .header h1 span { color: #4f7aff; }
+        .status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .status.loading { background: #f59e0b22; color: #f59e0b; border: 1px solid #f59e0b44; }
+        .status.success { background: #22c55e22; color: #22c55e; border: 1px solid #22c55e44; }
+        .status.waiting { background: #3b82f622; color: #3b82f6; border: 1px solid #3b82f644; }
+        .status.error { background: #ef444422; color: #ef4444; border: 1px solid #ef444444; }
+
+        /* Инструкция */
+        .instruction {
+            text-align: center;
+            padding: 60px 20px;
+            background: #1a1a24;
+            border-radius: 12px;
+            border: 2px dashed #3a3a4a;
+            margin-bottom: 20px;
+        }
+        .instruction .icon { font-size: 72px; margin-bottom: 20px; display: block; }
+        .instruction h2 { color: #fff; font-size: 28px; margin-bottom: 10px; }
+        .instruction p { color: #999; font-size: 16px; max-width: 500px; margin: 0 auto 20px; line-height: 1.6; }
+        .btn {
+            display: inline-block;
+            padding: 14px 40px;
+            border-radius: 10px;
+            border: none;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        .btn-primary { background: #4f7aff; color: #fff; }
+        .btn-primary:hover { background: #3b5fd9; transform: scale(1.02); }
+        .btn-secondary { background: #2a2a3a; color: #fff; }
+        .btn-secondary:hover { background: #3a3a4a; }
+
+        /* Таблица */
+        .table-wrapper {
+            background: #1a1a24;
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid #2a2a3a;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th {
+            background: #2a2a3a;
+            color: #aaa;
+            padding: 12px 14px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #1e1e2a;
+        }
+        tr:hover td { background: #1e1e2a; }
+        .text-right { text-align: right; }
+        
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-gold { background: #b8860b44; color: #ffd966; border: 1px solid #b8860b66; }
+        .badge-blue { background: #1a5a8c44; color: #8fcbff; border: 1px solid #1a5a8c66; }
+        .badge-green { background: #2d7d4644; color: #a3e4b0; border: 1px solid #2d7d4666; }
+
+        .dino-name { font-weight: 700; color: #fff; }
+
+        /* Калькулятор */
+        .calc-section {
+            background: #1a1a24;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #2a2a3a;
+            margin-top: 20px;
+        }
+        .calc-section h3 { color: #fff; margin-bottom: 15px; }
+        .calc-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .calc-group {
+            flex: 1;
+            min-width: 150px;
+        }
+        .calc-group label {
+            display: block;
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        .calc-group select, .calc-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #2a2a3a;
+            background: #0d0d12;
+            color: #fff;
+            font-size: 15px;
+        }
+        .calc-group select:focus, .calc-group input:focus {
+            outline: none;
+            border-color: #4f7aff;
+        }
+        .calc-result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #0d0d12;
+            border-radius: 10px;
+            border-left: 4px solid #4f7aff;
+        }
+        .calc-result .price {
+            font-size: 36px;
+            font-weight: 800;
+            color: #ffd966;
+        }
+        .calc-result .detail {
+            color: #888;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        /* Статистика */
+        .stats-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        .stat-card {
+            flex: 1;
+            min-width: 120px;
+            background: #0d0d12;
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 1px solid #1e1e2a;
+        }
+        .stat-card .number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .stat-card .label {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            .header { flex-direction: column; gap: 10px; text-align: center; }
+            .calc-row { flex-direction: column; }
+            .calc-group { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+    
+    <!-- Шапка -->
+    <div class="header">
+        <h1>🦕 <span>Dynastica</span> Stats</h1>
+        <div>
+            <span class="status waiting" id="statusBadge">⏳ Ожидание...</span>
+            <button class="btn btn-secondary" style="padding:8px 16px;font-size:13px;margin-left:10px;" onclick="forceCollect()">🔄 Обновить</button>
+        </div>
+    </div>
+
+    <!-- Инструкция (показывается, если не на сайте Dynastica) -->
+    <div class="instruction" id="instruction">
+        <span class="icon">🌐</span>
+        <h2>Перейдите на страницу аукциона</h2>
+        <p>Откройте страницу аукциона Dynastica в этой же вкладке, и я автоматически соберу все данные.</p>
+        <a href="https://dynastica.ru/auction/" target="_blank" class="btn btn-primary" onclick="return openAuction()">
+            🚀 Перейти на аукцион
+        </a>
+        <p style="margin-top:15px;font-size:13px;color:#555;">После перехода вернитесь сюда — данные соберутся автоматически!</p>
+    </div>
+
+    <!-- Основной контент (показывается после сбора данных) -->
+    <div id="content" class="hidden">
+
+        <!-- Статистика -->
+        <div class="stats-row" id="statsCards">
+            <div class="stat-card">
+                <div class="number" id="totalLots">0</div>
+                <div class="label">Всего лотов</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalDinos">0</div>
+                <div class="label">Видов динозавров</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="avgPriceAll">0</div>
+                <div class="label">Средняя цена (DC)</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="lastUpdate">—</div>
+                <div class="label">Последнее обновление</div>
+            </div>
+        </div>
+
+        <!-- Таблица -->
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Динозавр</th>
+                        <th class="text-right">Лотов</th>
+                        <th class="text-right">Ср. цена</th>
+                        <th class="text-right">Мин.</th>
+                        <th class="text-right">Макс.</th>
+                        <th class="text-right">Ср. воскр.</th>
+                        <th class="text-right">Ср. ОА</th>
+                        <th class="text-right">Популярность</th>
+                    </tr>
+                </thead>
+                <tbody id="statsBody">
+                    <tr><td colspan="8" style="text-align:center;color:#666;">Нет данных</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Калькулятор -->
+        <div class="calc-section">
+            <h3>🧮 Калькулятор цены</h3>
+            <div class="calc-row">
+                <div class="calc-group">
+                    <label>Динозавр</label>
+                    <select id="dinoSelect"><option value="">-- выберите --</option></select>
+                </div>
+                <div class="calc-group">
+                    <label>Воскрешения</label>
+                    <input type="number" id="inputLives" value="1" min="0">
+                </div>
+                <div class="calc-group">
+                    <label>ОА (очки активности)</label>
+                    <input type="number" id="inputOa" value="100" min="0">
+                </div>
+                <div class="calc-group" style="flex: 0 0 auto;">
+                    <button class="btn btn-primary" onclick="calculatePrice()" style="padding:10px 30px;">💰 Рассчитать</button>
+                </div>
+            </div>
+            <div class="calc-result" id="calcResult">
+                <div class="price" id="resultPrice">—</div>
+                <div class="detail" id="resultDetail">Введите параметры и нажмите «Рассчитать»</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // ПОЛНОСТЬЮ АВТОМАТИЧЕСКИЙ СКРИПТ
+    // ============================================================
+
+    let globalStats = {};
+    let allLots = [];
+
+    // Карта названий
+    const NAME_MAP = {
+        'RexAdultS': 'Тираннозавр', 'Rex': 'Тираннозавр',
+        'GigaAdultS': 'Гиганотозавр', 'Giga': 'Гиганотозавр',
+        'Spino': 'Спинозавр',
+        'Puerta': 'Пуэрта',
+        'TrikeAdultS': 'Трицератопс', 'Trike': 'Трицератопс',
+        'Anky': 'Анкилозавр',
+        'ConcavenatorAdultS': 'Конкавенатор', 'Concavenator': 'Конкавенатор',
+        'Shant': 'Шантунгозавр',
+        'Camara': 'Камаразавр',
+        'Stego': 'Стегозавр',
+        'Theri': 'Теризинозавр',
+        'GalliAdultS': 'Галлимимус', 'Galli': 'Галлимимус',
+        'DiabloAdultS': 'Диаблоцератопс', 'Diablo': 'Диаблоцератопс',
+        'PachyAdultS': 'Пахицефалозавр', 'Pachy': 'Пахицефалозавр',
+        'DryoAdultS': 'Дриозавр', 'Dryo': 'Дриозавр',
+        'DiloAdultS': 'Дилофозавр', 'Dilo': 'Дилофозавр',
+        'ZupaysaurusAdultS': 'Зупайзавр', 'Zupaysaurus': 'Зупайзавр',
+        'AlloAdultS': 'Аллозавр', 'Allo': 'Аллозавр',
+        'SuchoAdultS': 'Зухомим', 'Sucho': 'Зухомим',
+        'CeratoAdultS': 'Цератозавр', 'Cerato': 'Цератозавр',
+        'MetriacanthosaurusAdultS': 'Метриакантозавр', 'Metriacanthosaurus': 'Метриакантозавр',
+        'Acro': 'Акрокантозавр',
+        'CarnoAdultS': 'Карнотавр', 'Carno': 'Карнотавр',
+        'Daspletosaurus': 'Дасплетозавр',
+        'Albert': 'Альбертозавр',
+        'Torvo': 'Торвозавр',
+        'Yuty': 'Ютираннус',
+        'IguanodonAdultS': 'Игуанодон', 'Iguanodon': 'Игуанодон',
+        'OuranosaurusAdultS': 'Уранозавр', 'Ouranosaurus': 'Уранозавр',
+        'Pachyrhinosaurus': 'Пахиринозавр',
+        'Lurdusaurus': 'Лурдузавр',
+        'MaiaAdultS': 'Майазавр', 'Maia': 'Майазавр',
+        'Deinocheirus': 'Дейнохейрус',
+        'Saurophaganax': 'Заврофаганакс',
+        'Bary': 'Барионикс',
+        'Oro': 'Ородромеус',
+        'Taco': 'Пситтакозавр',
+        'Ava': 'Авацератопс',
+        'Velo': 'Велоцираптор',
+        'StyracosaurusAdultS': 'Стиракозавр', 'Styracosaurus': 'Стиракозавр',
+        'ParaAdultS': 'Паразауролоф', 'Para': 'Паразауролоф',
+    };
+
+    function getNiceName(raw) {
+        return NAME_MAP[raw] || raw;
+    }
+
+    // ============================================================
+    // СБОР ДАННЫХ
+    // ============================================================
+
+    function collectData() {
+        const items = document.querySelectorAll('.item');
+        
+        if (items.length === 0) {
+            setStatus('waiting', '⏳ На странице нет лотов');
+            return false;
+        }
+
+        setStatus('loading', '🔄 Сбор данных...');
+
+        const lots = [];
+        items.forEach(el => {
+            const rawTitle = el.dataset.title || 'Неизвестный';
+            const title = getNiceName(rawTitle);
+            const price = parseFloat(el.dataset.price) || 0;
+            const lives = parseInt(el.dataset.lives) || 0;
+            let oa = 0;
+            const pointsDiv = el.querySelector('.product-title .points');
+            if (pointsDiv) {
+                const match = pointsDiv.textContent.match(/(\d+)\s*ОА/);
+                if (match) oa = parseInt(match[1]);
+            }
+            lots.push({ title, price, lives, oa });
+        });
+
+        if (lots.length === 0) {
+            setStatus('error', '❌ Не удалось собрать данные');
+            return false;
+        }
+
+        allLots = lots;
+        globalStats = buildStats(lots);
+        renderAll(lots, globalStats);
+        setStatus('success', `✅ Собрано ${lots.length} лотов, ${Object.keys(globalStats).length} видов`);
+
+        // Сохраняем в localStorage
+        try {
+            localStorage.setItem('dynastica_auction_data', JSON.stringify({ lots, stats: globalStats, timestamp: Date.now() }));
+        } catch(e) {}
+
+        return true;
+    }
+
+    // ============================================================
+    // СТАТИСТИКА
+    // ============================================================
+
+    function buildStats(lots) {
+        const groups = {};
+        lots.forEach(l => {
+            if (!groups[l.title]) groups[l.title] = [];
+            groups[l.title].push(l);
+        });
+
+        const stats = {};
+        const totalLots = lots.length;
+        Object.keys(groups).forEach(title => {
+            const list = groups[title];
+            const count = list.length;
+            const prices = list.map(l => l.price);
+            const lives = list.map(l => l.lives);
+            const oas = list.map(l => l.oa);
+
+            stats[title] = {
+                count: count,
+                avgPrice: prices.reduce((a,b) => a+b, 0) / count,
+                minPrice: Math.min(...prices),
+                maxPrice: Math.max(...prices),
+                avgLives: lives.reduce((a,b) => a+b, 0) / count,
+                avgOa: oas.reduce((a,b) => a+b, 0) / count,
+                popularity: (count / totalLots * 100),
+            };
+        });
+        return stats;
+    }
+
+    // ============================================================
+    // ОТРИСОВКА
+    // ============================================================
+
+    function renderAll(lots, stats) {
+        // Показываем контент
+        document.getElementById('instruction').classList.add('hidden');
+        document.getElementById('content').classList.remove('hidden');
+
+        // Статистика
+        const totalLots = lots.length;
+        const totalDinos = Object.keys(stats).length;
+        const allPrices = lots.map(l => l.price);
+        const avgAll = allPrices.reduce((a,b) => a+b, 0) / allPrices.length;
+
+        document.getElementById('totalLots').textContent = totalLots;
+        document.getElementById('totalDinos').textContent = totalDinos;
+        document.getElementById('avgPriceAll').textContent = avgAll.toFixed(1) + ' DC';
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+
+        // Таблица
+        const tbody = document.getElementById('statsBody');
+        const names = Object.keys(stats).sort((a,b) => stats[b].count - stats[a].count);
+
+        if (names.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#666;">Нет данных</td></tr>';
+            return;
+        }
+
+        let html = '';
+        names.forEach(name => {
+            const s = stats[name];
+            let popClass = 'badge-green';
+            if (s.popularity > 20) popClass = 'badge-gold';
+            else if (s.popularity > 10) popClass = 'badge-blue';
+            html += `<tr>
+                <td class="dino-name">${name}</td>
+                <td class="text-right">${s.count}</td>
+                <td class="text-right">${s.avgPrice.toFixed(1)}</td>
+                <td class="text-right">${s.minPrice}</td>
+                <td class="text-right">${s.maxPrice}</td>
+                <td class="text-right">${s.avgLives.toFixed(1)}</td>
+                <td class="text-right">${s.avgOa.toFixed(0)}</td>
+                <td class="text-right"><span class="badge ${popClass}">${s.popularity.toFixed(1)}%</span></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+
+        // Селект для калькулятора
+        const select = document.getElementById('dinoSelect');
+        select.innerHTML = '<option value="">-- выберите --</option>';
+        names.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = `${name} (${stats[name].avgPrice.toFixed(1)} DC)`;
+            select.appendChild(opt);
+        });
+        if (names.length > 0) select.value = names[0];
+    }
+
+    // ============================================================
+    // КАЛЬКУЛЯТОР
+    // ============================================================
+
+    function calculatePrice() {
+        const dinoName = document.getElementById('dinoSelect').value;
+        const lives = parseFloat(document.getElementById('inputLives').value) || 0;
+        const oa = parseFloat(document.getElementById('inputOa').value) || 0;
+
+        const resultPrice = document.getElementById('resultPrice');
+        const resultDetail = document.getElementById('resultDetail');
+
+        if (!dinoName || !globalStats[dinoName]) {
+            resultPrice.textContent = '⚠️ Ошибка';
+            resultDetail.textContent = 'Выберите динозавра из списка.';
+            return;
+        }
+
+        const stats = globalStats[dinoName];
+        const lotsForDino = allLots.filter(l => l.title === dinoName);
+        
+        // Цена за 1 ОА
+        const lotsWithOa = lotsForDino.filter(l => l.oa > 0);
+        let pricePerOa = 0;
+        if (lotsWithOa.length > 0) {
+            const totalPrice = lotsWithOa.reduce((s,l) => s + l.price, 0);
+            const totalOa = lotsWithOa.reduce((s,l) => s + l.oa, 0);
+            pricePerOa = totalPrice / totalOa;
+        } else {
+            pricePerOa = stats.avgPrice / (stats.avgOa + 1);
+        }
+
+        // Цена за 1 воскрешение
+        const lotsWithLives = lotsForDino.filter(l => l.lives > 0);
+        let pricePerLive = 0;
+        if (lotsWithLives.length > 0) {
+            const totalPrice = lotsWithLives.reduce((s,l) => s + l.price, 0);
+            const totalLives = lotsWithLives.reduce((s,l) => s + l.lives, 0);
+            pricePerLive = totalPrice / totalLives;
+        } else {
+            pricePerLive = stats.avgPrice / (stats.avgLives + 1);
+        }
+
+        if (!isFinite(pricePerOa) || pricePerOa > 100) pricePerOa = 0.1;
+        if (!isFinite(pricePerLive) || pricePerLive > 100) pricePerLive = 0.1;
+
+        const total = (pricePerOa * oa) + (pricePerLive * lives);
+
+        resultPrice.textContent = `${total.toFixed(1)} DC`;
+        resultDetail.innerHTML = `
+            🟢 ОА: ${oa} × ${pricePerOa.toFixed(3)} = ${(pricePerOa * oa).toFixed(1)} DC<br>
+            🔄 Воскр.: ${lives} × ${pricePerLive.toFixed(3)} = ${(pricePerLive * lives).toFixed(1)} DC<br>
+            <strong style="color:#ffd966;">Итого: ${total.toFixed(1)} DC</strong>
+        `;
+    }
+
+    // ============================================================
+    // СТАТУС
+    // ============================================================
+
+    function setStatus(type, text) {
+        const badge = document.getElementById('statusBadge');
+        badge.className = 'status ' + type;
+        badge.textContent = text;
+    }
+
+    // ============================================================
+    // ПРИНУДИТЕЛЬНЫЙ СБОР
+    // ============================================================
+
+    function forceCollect() {
+        if (window.location.hostname.includes('dynastica')) {
+            collectData();
+        } else {
+            setStatus('error', '❌ Не на странице аукциона');
+            alert('Перейдите на страницу аукциона Dynastica и нажмите "Обновить" снова.');
+        }
+    }
+
+    function openAuction() {
+        window.open('https://dynastica.ru/auction/', '_blank');
+        setStatus('waiting', '⏳ Перейдите на страницу аукциона, затем вернитесь');
+        return false;
+    }
+
+    // ============================================================
+    // АВТОМАТИЧЕСКИЙ ЗАПУСК
+    // ============================================================
+
+    // Проверяем сохранённые данные
+    try {
+        const saved = localStorage.getItem('dynastica_auction_data');
+        if (saved) {
+            const data = JSON.parse(saved);
+            if (data.lots && data.lots.length > 0) {
+                allLots = data.lots;
+                globalStats = data.stats || buildStats(data.lots);
+                renderAll(allLots, globalStats);
+                setStatus('success', `💾 Загружено из кэша: ${allLots.length} лотов`);
+            }
+        }
+    } catch(e) {}
+
+    // Если мы на странице Dynastica — сразу собираем данные
+    if (window.location.hostname.includes('dynastica')) {
+        setTimeout(collectData, 500);
+    } else {
+        // Проверяем, есть ли уже данные в кэше
+        const saved = localStorage.getItem('dynastica_auction_data');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                if (data.lots && data.lots.length > 0) {
+                    // Уже показали кэш, просто ждём
+                } else {
+                    setStatus('waiting', '🌐 Перейдите на страницу аукциона для сбора данных');
+                }
+            } catch(e) {}
+        } else {
+            setStatus('waiting', '🌐 Перейдите на страницу аукциона для сбора данных');
+        }
+    }
+
+    // Слушаем изменения видимости страницы (если пользователь вернулся с Dynastica)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && window.location.hostname.includes('dynastica')) {
+            collectData();
+        }
+    });
+
+    console.log('🦕 Dynastica Stats — полностью автоматический сбор данных!');
+    console.log('📌 Откройте https://dynastica.ru/auction/ в этой же вкладке.');
+</script>
+
+</body>
+</html>
