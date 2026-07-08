@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynastica — Профессиональный Калькулятор Цен</title>
+    <title>Dynastica — Профессиональный Калькулятор Цен v3</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -101,12 +101,11 @@
 
 <div class="container">
     <h1>Dynastica Калькулятор Цен</h1>
-    <div class="subtitle">Обновленная база цен | Больше воскрешений — выше стоимость лота</div>
+    <div class="subtitle">Любой геном | Больше воскрешений — выше стоимость лота</div>
     
     <div class="form-group">
         <label for="dino-select">Выберите вид динозавра:</label>
         <select id="dino-select" onchange="calculatePrice()">
-            <!-- Список отсортирован по возрастанию базовой цены для удобства -->
             <option value="Псиптакозавр">Пситтакозавр (1 DC)</option>
             <option value="Ородромус">Ородромус (2 DC)</option>
             <option value="Авацератопс">Авацератопс (4 DC)</option>
@@ -168,19 +167,12 @@
 
     <div class="form-group">
         <label for="revives-input">Количество воскрешений (Каждое добавляет +5% стоимости):</label>
-        <input type="number" id="revives-input" value="0" min="0" max="100" oninput="calculatePrice()">
+        <input type="number" id="revives-input" value="0" min="0" max="500" oninput="calculatePrice()">
     </div>
 
     <div class="form-group">
-        <label for="genome-select">Геном динозавра:</label>
-        <select id="genome-select" onchange="calculatePrice()">
-            <option value="1.0">1.0 (Базовый х1.0)</option>
-            <option value="1.1">1.1 (Наценка +10%)</option>
-            <option value="1.2">1.2 (Наценка +20%)</option>
-            <option value="1.3">1.3 (Наценка +30%)</option>
-            <option value="1.4">1.4 (Наценка +40%)</option>
-            <option value="1.5">1.5 (Наценка +50%)</option>
-        </select>
+        <label for="genome-input">Геном динозавра (Вручную: 1.0, 1.6, 2.5 и т.д.):</label>
+        <input type="number" id="genome-input" value="1.0" min="0.1" step="0.1" oninput="calculatePrice()">
     </div>
 
     <div class="result-box">
@@ -191,7 +183,6 @@
 </div>
 
 <script>
-    // Точные новые базовые цены из вашего запроса
     const marketData = {
         "Гипсилофон": 7, "Авацератопс": 4, "Австрорантор": 11, "Герреразавр": 11,
         "Барионикс": 16, "Велоцирантор": 6, "Псиптакозавр": 1, "Ородромус": 2,
@@ -212,30 +203,28 @@
         const dinoKey = document.getElementById('dino-select').value;
         const oa = parseFloat(document.getElementById('oa-input').value) || 0;
         const revives = parseInt(document.getElementById('revives-input').value) || 0;
-        const genomeMultiplier = parseFloat(document.getElementById('genome-select').value) || 1.0;
+        const genomeMultiplier = parseFloat(document.getElementById('genome-input').value) || 1.0;
 
         let basePrice = marketData[dinoKey] || 10;
         
         document.getElementById('base-price-hint').innerText = `Базовая цена вида: ${basePrice} DC`;
 
-        // 1. Динамический расчет бонуса ОА в зависимости от ценности динозавра
-        // Крупные виды получают больше за ОА, мелкие — меньше
+        // 1. Динамический бонус за ОА на основе ценности вида
         let oaRate = basePrice > 40 ? 0.015 : (basePrice > 15 ? 0.01 : 0.005);
         let oaBonus = oa * oaRate;
         let currentPrice = basePrice + oaBonus;
 
-        // 2. Начисление бонуса за Воскрешения (+5% к накопленной стоимости за каждое)
+        // 2. Начисление бонуса за Воскрешения (+5% за каждое)
         let reviveMultiplier = 1 + (revives * 0.05);
         currentPrice *= reviveMultiplier;
 
-        // 3. Множитель Генома
+        // 3. Свободный множитель Генома
         currentPrice *= genomeMultiplier;
 
-        // Вывод итогового результата (округление до целых)
+        // Вывод итогового результата
         document.getElementById('final-price').innerText = Math.round(currentPrice);
     }
 
-    // Первичный запуск при открытии страницы
     window.onload = calculatePrice;
 </script>
 
