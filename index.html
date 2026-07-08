@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Оценка лота — аукцион Dynastica</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg-0:#0E1712; --bg-1:#152119;
+    --surface:#1B2A21; --surface-2:#22331F;
+    --tag:#EFE8D6; --tag-shadow:#C9BFA2; --ink:#1C1A12;
+    --bone:#F1ECDC; --bone-dim:#B9C2B3;
+    --amber:#E3A83D; --amber-dim:#8A6A2A;
+    --clay:#BE5A34; --moss:#7DA166; --rust:#C15B4B;
+    --line:rgba(241,236,220,0.12); --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(227,168,61,0.08), transparent 45%),
+      radial-gradient(ellipse at 100% 0%, rgba(125,161,102,0.10), transparent 40%),
+      linear-gradient(180deg, var(--bg-0), var(--bg-1) 60%, var(--bg-0));
+    color:var(--bone); font-family:'Inter', sans-serif;
+    min-height:100vh; padding:48px 20px 80px;
+  }
+  .wrap{max-width:1040px;margin:0 auto;}
+  header{margin-bottom:40px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--amber); display:flex;align-items:center;gap:10px;
+    margin-bottom:14px;
+  }
+  .eyebrow::before{content:'';width:22px;height:1px;background:var(--amber-dim);}
+  h1{
+    font-family:'Fraunces', serif; font-optical-sizing:auto; font-weight:600;
+    font-size:clamp(30px, 4.6vw, 48px); line-height:1.05; margin:0 0 14px; letter-spacing:-0.01em;
+  }
+  h1 em{font-style:italic;font-weight:400;color:var(--amber);}
+  .sub{color:var(--bone-dim);font-size:15px;line-height:1.6;max-width:600px;margin:0 0 22px;}
+  .stat-strip{
+    display:flex;gap:28px;flex-wrap:wrap;font-family:'IBM Plex Mono', monospace;
+    font-size:13px;color:var(--bone-dim);border-top:1px solid var(--line);padding-top:16px;
+  }
+  .stat-strip b{color:var(--bone);font-weight:600;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;}
+  @media(max-width:820px){ .grid{grid-template-columns:1fr;} }
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:28px;}
+  .panel h2{
+    font-family:'Fraunces', serif;font-weight:600;font-size:20px;margin:0 0 22px;
+    display:flex;align-items:baseline;gap:10px;
+  }
+  .panel h2 .n{font-family:'IBM Plex Mono', monospace;font-size:12px;color:var(--bone-dim);font-weight:400;}
+
+  label{
+    display:block;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--bone-dim);margin-bottom:8px;
+  }
+  .field{margin-bottom:20px;}
+  select, input[type=number]{
+    width:100%;background:var(--bg-0);border:1px solid var(--line);border-radius:8px;
+    color:var(--bone);font-family:'IBM Plex Mono', monospace;font-size:15px;padding:12px 14px;
+    appearance:none;-webkit-appearance:none;
+  }
+  select{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23B9C2B3' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer;
+  }
+  select:focus-visible, input:focus-visible{outline:2px solid var(--amber);outline-offset:1px;border-color:var(--amber);}
+
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .discount-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .discount-row select{width:auto;flex:1;min-width:140px;}
+  .discount-hint{font-size:12px;color:var(--bone-dim);margin-top:8px;line-height:1.5;}
+
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono', monospace;
+    font-size:11px;padding:4px 9px;border-radius:20px;border:1px solid var(--line);
+    color:var(--bone-dim);
+  }
+  .badge.own{color:var(--moss);border-color:rgba(125,161,102,0.4);}
+  .badge.global{color:var(--amber);border-color:rgba(227,168,61,0.4);}
+  .badge-row{display:flex;gap:8px;flex-wrap:wrap;margin:-8px 0 20px;}
+
+  .mini-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+  .mini-stats .cell{background:var(--bg-0);border:1px solid var(--line);border-radius:8px;padding:12px 14px;}
+  .mini-stats .cell .k{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--bone-dim);margin-bottom:4px;}
+  .mini-stats .cell .v{font-family:'IBM Plex Mono', monospace;font-size:16px;font-weight:600;}
+
+  .rate-bar{height:6px;border-radius:3px;background:var(--bg-0);overflow:hidden;margin-top:10px;}
+  .rate-bar > div{height:100%;background:var(--moss);}
+
+  .tag{
+    position:relative;background:var(--tag);color:var(--ink);border-radius:10px;
+    padding:26px 26px 22px;box-shadow:0 14px 30px -12px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.06);
+  }
+  .tag::before{
+    content:'';position:absolute;top:-9px;left:24px;width:18px;height:18px;
+    background:var(--bg-1);border:2px solid var(--tag-shadow);border-radius:50%;
+  }
+  .tag .perf{
+    position:absolute;left:0;right:0;top:-1px;height:10px;
+    background-image:radial-gradient(circle, var(--bg-1) 3px, transparent 3.2px);
+    background-size:14px 10px;background-position:7px 0;
+  }
+  .tag-label{font-family:'IBM Plex Mono', monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--amber-dim);margin-bottom:6px;}
+  .tag-species{font-family:'Fraunces', serif;font-weight:600;font-size:22px;margin-bottom:18px;color:var(--ink);}
+  .tag-price{font-family:'IBM Plex Mono', monospace;font-weight:600;font-size:44px;line-height:1;letter-spacing:-0.01em;}
+  .tag-price small{font-size:18px;font-weight:500;margin-left:6px;color:var(--amber-dim);}
+  .tag-floor{font-family:'IBM Plex Mono', monospace;font-size:12px;color:var(--amber-dim);margin-top:6px;}
+  .tag-note{
+    margin-top:16px;padding-top:16px;border-top:1px dashed var(--tag-shadow);
+    font-size:13px;line-height:1.55;display:flex;gap:10px;align-items:flex-start;
+  }
+  .tag-note .dot{flex:none;width:9px;height:9px;border-radius:50%;margin-top:4px;}
+  .dot.good{background:var(--moss);} .dot.warn{background:var(--amber);} .dot.bad{background:var(--rust);}
+
+  .compare{margin-top:22px;}
+  .compare .row{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:12px;font-family:'IBM Plex Mono', monospace;}
+  .compare .row .lbl{width:120px;color:var(--bone-dim);flex:none;line-height:1.3;}
+  .compare .row .bar-wrap{flex:1;background:var(--bg-0);border-radius:5px;height:10px;overflow:hidden;border:1px solid var(--line);}
+  .compare .row .bar-wrap div{height:100%;}
+  .compare .row .val{width:70px;text-align:right;flex:none;}
+  .bar-floor{background:#6b7268;} .bar-sold{background:var(--bone-dim);} .bar-unsold{background:var(--rust);} .bar-you{background:var(--amber);}
+
+  .factor-summary{
+    margin-top:20px;padding:14px 16px;background:var(--bg-0);border:1px solid var(--line);
+    border-radius:8px;font-size:12px;line-height:1.7;color:var(--bone-dim);
+  }
+  .factor-summary b{color:var(--bone);}
+
+  footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);font-size:12px;color:var(--bone-dim);line-height:1.6;}
+  footer b{color:var(--bone);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Dynastica · журнал аукциона</div>
+    <h1>Сколько просить <em>за лота</em></h1>
+    <p class="sub">Расчёт строится от официальной минимальной цены вида (ниже неё поставить нельзя), а дальше учитывает, насколько на конкретном виде поднимают цену воскрешения, очки активности и геном — по данным реальных продаж и лотов, которые провисели без единой ставки.</p>
+    <div class="stat-strip">
+      <span><b>5 537</b> продаж разобрано</span>
+      <span><b>46 385</b> лотов провисели без ставок</span>
+      <span><b>47</b> видов в базе</span>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <div class="panel">
+      <h2>Параметры лота <span class="n">01</span></h2>
+
+      <div class="field">
+        <label for="species">Вид динозавра</label>
+        <select id="species"></select>
+      </div>
+
+      <div class="mini-stats" id="miniStats"></div>
+      <div class="rate-bar"><div id="rateBar" style="width:0%"></div></div>
+      <div class="discount-hint" id="rateHint" style="margin-bottom:22px;"></div>
+
+      <div class="two-col">
+        <div class="field">
+          <label for="resurrections">Воскрешения</label>
+          <select id="resurrections"></select>
+        </div>
+        <div class="field">
+          <label for="oa">Очки активности</label>
+          <input type="number" id="oa" min="0" step="1" value="0">
+        </div>
+      </div>
+      <div class="field">
+        <label for="genome">Геном</label>
+        <select id="genome"></select>
+      </div>
+
+      <div class="badge-row" id="badgeRow"></div>
+
+      <div class="field">
+        <label for="discount">Скидка от расчётной цены</label>
+        <div class="discount-row"><select id="discount"></select></div>
+        <p class="discount-hint">Ниже официального минимума цену всё равно не поставить. Учтите: аукцион добавляет к вписанной цене ещё 10% — калькулятор уже это закладывает.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Рекомендованная цена <span class="n">02</span></h2>
+
+      <div class="tag">
+        <div class="perf"></div>
+        <div class="tag-label">Специмен · впишите в форму лота</div>
+        <div class="tag-species" id="tagSpecies">—</div>
+        <div class="tag-price" id="tagPrice">— <small>DC</small></div>
+        <div class="tag-floor" id="tagFloor"></div>
+        <div class="tag-floor" id="tagFinal" style="color:var(--ink);opacity:.7;"></div>
+        <div class="tag-note" id="tagNote">
+          <span class="dot good"></span>
+          <span>Выберите вид слева, чтобы увидеть расчёт.</span>
+        </div>
+      </div>
+
+      <div class="compare">
+        <div class="row"><span class="lbl">Минимальная цена</span><span class="bar-wrap"><div class="bar-floor" id="barFloor" style="width:0%"></div></span><span class="val" id="valFloor">—</span></div>
+        <div class="row"><span class="lbl">Типичная продажа<br>с вашими признаками</span><span class="bar-wrap"><div class="bar-sold" id="barSold" style="width:0%"></div></span><span class="val" id="valSold">—</span></div>
+        <div class="row"><span class="lbl">Непроданные<br>с вашими признаками</span><span class="bar-wrap"><div class="bar-unsold" id="barUnsold" style="width:0%"></div></span><span class="val" id="valUnsold">—</span></div>
+        <div class="row"><span class="lbl">Ваша цена<br><span style="opacity:.55;">(итог, с наценкой)</span></span><span class="bar-wrap"><div class="bar-you" id="barYou" style="width:0%"></div></span><span class="val" id="valYou">—</span></div>
+      </div>
+
+      <div class="factor-summary" id="factorSummary"></div>
+    </div>
+
+  </div>
+
+  <footer>
+    <b>Как это считается.</b> У каждого вида есть официальная минимальная цена — ниже неё лот выставить нельзя. Поверх неё вид обычно продаётся с наценкой («типичный разброс» = медиана реальных продаж ÷ минимальная цена). Дальше на цену умножаются коэффициенты воскрешений, очков активности и генома — там, где по виду накопилось от 30 продаж и хотя бы 3 разных значения признака с 5+ наблюдениями, коэффициенты посчитаны индивидуально для этого вида (метка «по виду»); иначе используется общий коэффициент по всем видам сразу (метка «общий»). Коэффициент гарантированно не может падать при росте признака — если по реальным продажам соседние уровни статистически неотличимы, они склеиваются в одно значение, а не подгоняются вручную. Цена непроданных лотов в исходных данных занижена на 10% относительно проданных — она приведена к общей базе (×1.1) и тоже масштабирована вашими признаками. Juvie-лоты (детёныши) исключены из расчёта — это отдельная возрастная категория с другой ценовой логикой. Данные собраны с аукциона Dynastica за период наблюдения; будущие торги могут отличаться.
+  </footer>
+
+</div>
+
+<script>
+const DB = {"species":{"Авацератопс":{"floor":4,"spread":1.5,"s":15,"u":629,"mn":5,"mx":330,"m":6,"ua":8.1},"Австрораптор":{"floor":11,"spread":1.091,"s":49,"u":231,"mn":10,"mx":2210,"m":12,"ua":30.6,"own":{"res":{"0":1.402,"1":1.402,"2":1.402,"3":1.402,"4":1.402,"5":1.402,"6":1.667,"7":1.667,"8":2.75,"9":2.75,"10+":2.75},"oa":{"0":0.976,"1-100":0.976,"101-500":1.0,"501-1500":2.25,"1501-5000":4.0,"5000+":108.75}}},"Акрокантозавр":{"floor":41,"spread":1.098,"s":138,"u":927,"mn":23,"mx":6666,"m":45.0,"ua":48.1,"own":{"res":{"0":1.062,"1":1.062,"2":1.153,"3":1.153,"4":1.153,"5":1.153,"6":1.153,"7":1.153,"8":2.283,"9":2.283,"10+":3.422},"oa":{"0":1.0,"1-100":1.0,"101-500":1.0,"501-1500":1.211,"1501-5000":1.3,"5000+":7.333},"genome":{"1.0":1.0,"1.0-1.4":1.222,"1.4-1.6":1.981,"1.6-1.8":1.981,"1.8+":148.133}}},"Аллозавр":{"floor":33,"spread":1.091,"s":85,"u":1274,"mn":33,"mx":3152,"m":36,"ua":38.1,"own":{"res":{"0":1.0,"1":1.0,"2":1.0,"3":1.0,"4":1.222,"5":1.222,"6":1.222,"7":1.222,"8":2.569,"9":2.569,"10+":3.889},"oa":{"0":1.0,"1-100":1.018,"101-500":1.018,"501-1500":1.018,"1501-5000":2.0,"5000+":5.556}}},"Альбертозавр":{"floor":38,"spread":1.132,"s":126,"u":796,"mn":39,"mx":220,"m":43.0,"ua":50.8,"own":{"res":{"0":1.0,"1":1.0,"2":1.066,"3":1.066,"4":1.209,"5":1.535,"6":1.558,"7":1.558,"8":2.052,"9":2.052,"10+":2.814},"oa":{"0":1.0,"1-100":1.0,"101-500":1.0,"501-1500":1.0,"1501-5000":1.349,"5000+":1.349}}},"Анкилозавр":{"floor":55,"spread":1.109,"s":76,"u":1862,"mn":55,"mx":5840,"m":61.0,"ua":56.3,"own":{"res":{"0":1.001,"1":1.001,"2":1.007,"3":1.007,"4":1.019,"5":1.019,"6":1.019,"7":1.255,"8":1.255,"9":1.255,"10+":1.255},"oa":{"0":1.0,"1-100":1.007,"101-500":1.007,"501-1500":1.007,"1501-5000":1.238,"5000+":95.738}}},"Барионикс":{"floor":16,"spread":1.625,"s":69,"u":732,"mn":17,"mx":3472,"m":26,"ua":23.2,"own":{"res":{"0":0.808,"1":0.808,"2":0.808,"3":0.808,"4":0.808,"5":1.138,"6":1.138,"7":1.385,"8":1.385,"9":1.707,"10+":1.707},"oa":{"0":0.835,"1-100":0.835,"101-500":0.835,"501-1500":1.077,"1501-5000":3.596,"5000+":11.0}}},"Велоцираптор":{"floor":6,"spread":4.0,"s":35,"u":251,"mn":9,"mx":1623,"m":24,"ua":16.9,"own":{"oa":{"0":0.617,"1-100":0.617,"101-500":0.617,"501-1500":0.917,"1501-5000":3.104,"5000+":51.396},"genome":{"1.0":0.375,"1.0-1.4":1.042,"1.4-1.6":2.542,"1.6-1.8":45.25,"1.8+":45.25}}},"Галлимимус":{"floor":11,"spread":1.273,"s":264,"u":546,"mn":11,"mx":2074,"m":14.0,"ua":40.7,"own":{"res":{"0":0.951,"1":0.951,"2":1.269,"3":1.269,"4":1.269,"5":2.464,"6":2.464,"7":3.357,"8":5.345,"9":5.345,"10+":5.345},"oa":{"0":0.857,"1-100":0.943,"101-500":0.943,"501-1500":1.214,"1501-5000":3.571,"5000+":21.214},"genome":{"1.0":0.857,"1.0-1.4":1.214,"1.4-1.6":2.25,"1.6-1.8":6.107,"1.8+":6.107}}},"Герреразавр":{"floor":11,"spread":1.091,"s":71,"u":343,"mn":11,"mx":3707,"m":12,"ua":15.6,"own":{"res":{"0":1.048,"1":1.048,"2":1.483,"3":1.483,"4":1.483,"5":2.333,"6":2.333,"7":2.333,"8":2.333,"9":2.333,"10+":13.75},"oa":{"0":1.0,"1-100":1.0,"101-500":1.0,"501-1500":1.583,"1501-5000":3.667,"5000+":3.667}}},"Гиганотозавр":{"floor":55,"spread":1.218,"s":407,"u":1021,"mn":10,"mx":10469,"m":67,"ua":82.1,"own":{"res":{"0":0.91,"1":1.149,"2":1.328,"3":1.567,"4":2.119,"5":2.433,"6":3.573,"7":3.573,"8":3.597,"9":7.388,"10+":7.388},"oa":{"0":0.972,"1-100":0.972,"101-500":0.972,"501-1500":1.194,"1501-5000":1.56,"5000+":4.925},"genome":{"1.0":0.981,"1.0-1.4":0.981,"1.4-1.6":1.254,"1.6-1.8":1.806,"1.8+":156.254}}},"Гипсилофодон":{"floor":7,"spread":3.143,"s":55,"u":406,"mn":7,"mx":1815,"m":22,"ua":12.7,"own":{"res":{"0":1.0,"1":1.0,"2":1.035,"3":1.035,"4":1.035,"5":1.035,"6":1.035,"7":1.035,"8":1.035,"9":1.035,"10+":1.035},"oa":{"0":0.349,"1-100":0.349,"101-500":0.349,"501-1500":0.773,"1501-5000":1.5,"5000+":45.75}}},"Дасплетозавр":{"floor":44,"spread":1.091,"s":117,"u":855,"mn":44,"mx":3467,"m":48,"ua":59.0,"own":{"res":{"0":1.0,"1":1.0,"2":1.0,"3":1.146,"4":1.323,"5":1.971,"6":1.971,"7":1.971,"8":2.345,"9":2.345,"10+":2.345},"oa":{"0":0.958,"1-100":0.958,"101-500":1.0,"501-1500":1.271,"1501-5000":3.208,"5000+":3.208}}},"Дейнохейрус":{"floor":63,"spread":1.159,"s":161,"u":1277,"mn":4,"mx":9999,"m":73,"ua":78.7,"own":{"res":{"0":0.989,"1":0.989,"2":0.989,"3":0.989,"4":1.055,"5":1.226,"6":1.507,"7":1.589,"8":1.671,"9":3.014,"10+":3.014},"oa":{"0":0.983,"1-100":0.983,"101-500":0.983,"501-1500":1.146,"1501-5000":1.146,"5000+":136.973}}},"Диаблоцератопс":{"floor":27,"spread":1.222,"s":77,"u":1198,"mn":28,"mx":3137,"m":33,"ua":32.4,"own":{"res":{"0":0.992,"1":0.992,"2":0.992,"3":0.992,"4":1.094,"5":1.094,"6":1.094,"7":1.505,"8":1.505,"9":1.505,"10+":5.182},"oa":{"0":0.939,"1-100":0.97,"101-500":1.011,"501-1500":1.011,"1501-5000":2.333,"5000+":18.333}}},"Дилофозавр":{"floor":12,"spread":1.417,"s":100,"u":1020,"mn":12,"mx":4027,"m":17.0,"ua":22.8,"own":{"res":{"0":0.843,"1":0.843,"2":0.843,"3":0.843,"4":0.843,"5":1.336,"6":1.336,"7":1.336,"8":1.336,"9":1.941,"10+":2.294},"oa":{"0":0.824,"1-100":0.824,"101-500":1.029,"501-1500":1.647,"1501-5000":2.824,"5000+":3.588}}},"Дриозавр":{"floor":9,"spread":2.444,"s":43,"u":696,"mn":9,"mx":3630,"m":22,"ua":195.9,"own":{"oa":{"0":0.625,"1-100":0.625,"101-500":0.816,"501-1500":0.816,"1501-5000":1.455,"5000+":11.318},"genome":{"1.0":0.682,"1.0-1.4":0.705,"1.4-1.6":4.977,"1.6-1.8":17.477,"1.8+":165.0}}},"Заврофаганакс":{"floor":49,"spread":1.122,"s":115,"u":1045,"mn":36,"mx":7333,"m":55,"ua":61.1,"own":{"res":{"0":1.0,"1":1.0,"2":1.0,"3":1.145,"4":1.364,"5":1.702,"6":1.702,"7":1.702,"8":2.775,"9":2.775,"10+":2.775},"oa":{"0":1.035,"1-100":1.035,"101-500":1.035,"501-1500":1.035,"1501-5000":2.109,"5000+":17.745}}},"Зупайзавр":{"floor":16,"spread":1.281,"s":18,"u":153,"mn":19,"mx":61,"m":20.5,"ua":30.3},"Зухомим":{"floor":35,"spread":1.143,"s":68,"u":1742,"mn":36,"mx":2869,"m":40.0,"ua":38.9,"own":{"res":{"0":1.0,"1":1.0,"2":1.019,"3":1.019,"4":1.183,"5":1.183,"6":1.183,"7":1.308,"8":1.308,"9":1.308,"10+":1.337},"oa":{"0":1.0,"1-100":1.007,"101-500":1.007,"501-1500":1.032,"1501-5000":1.032,"5000+":2.2}}},"Игуанодон":{"floor":44,"spread":1.205,"s":51,"u":897,"mn":44,"mx":4176,"m":53,"ua":48.7,"own":{"res":{"0":0.951,"1":0.951,"2":0.951,"3":0.951,"4":0.951,"5":1.079,"6":1.079,"7":1.198,"8":1.198,"9":1.198,"10+":2.038},"oa":{"0":0.906,"1-100":0.953,"101-500":1.122,"501-1500":1.122,"1501-5000":1.453,"5000+":56.604}}},"Ирритатор":{"floor":16,"spread":1.188,"s":38,"u":178,"mn":19,"mx":6600,"m":19.0,"ua":19.9,"own":{"oa":{"0":1.018,"1-100":1.018,"101-500":1.018,"501-1500":1.018,"1501-5000":1.053,"5000+":1.053}}},"Камаразавр":{"floor":57,"spread":1.123,"s":107,"u":1603,"mn":53,"mx":5513,"m":64,"ua":61.8,"own":{"res":{"0":1.019,"1":1.019,"2":1.019,"3":1.019,"4":1.068,"5":1.068,"6":1.074,"7":1.074,"8":1.074,"9":1.074,"10+":2.469},"oa":{"0":1.0,"1-100":1.0,"101-500":1.0,"501-1500":1.0,"1501-5000":1.203,"5000+":1.719}}},"Карнотавр":{"floor":27,"spread":1.222,"s":175,"u":1103,"mn":25,"mx":5526,"m":33,"ua":37.3,"own":{"res":{"0":0.939,"1":0.939,"2":0.939,"3":1.061,"4":1.858,"5":1.858,"6":1.858,"7":2.091,"8":2.091,"9":2.091,"10+":2.818},"oa":{"0":0.939,"1-100":0.939,"101-500":0.939,"501-1500":0.939,"1501-5000":2.167,"5000+":3.333}}},"Конкавенатор":{"floor":16,"spread":1.375,"s":122,"u":714,"mn":17,"mx":4730,"m":22.0,"ua":31.9,"own":{"res":{"0":0.94,"1":0.94,"2":0.94,"3":0.94,"4":1.409,"5":1.5,"6":2.341,"7":2.341,"8":2.341,"9":2.784,"10+":2.784},"oa":{"0":0.963,"1-100":0.963,"101-500":1.417,"501-1500":1.417,"1501-5000":5.0,"5000+":5.0},"genome":{"1.0":0.864,"1.0-1.4":1.0,"1.4-1.6":1.386,"1.6-1.8":1.773,"1.8+":157.591}}},"Лурдузавр":{"floor":24,"spread":1.292,"s":70,"u":1388,"mn":25,"mx":4594,"m":31.0,"ua":28.9,"own":{"res":{"0":0.929,"1":0.929,"2":0.952,"3":1.089,"4":1.089,"5":1.387,"6":1.523,"7":1.523,"8":1.523,"9":1.523,"10+":1.523},"oa":{"0":1.039,"1-100":1.039,"101-500":1.039,"501-1500":1.039,"1501-5000":1.258,"5000+":1.258}}},"Майазавр":{"floor":24,"spread":1.208,"s":105,"u":1224,"mn":25,"mx":4078,"m":29,"ua":29.4,"own":{"res":{"0":1.126,"1":1.126,"2":1.126,"3":1.126,"4":1.126,"5":1.414,"6":1.414,"7":1.414,"8":1.414,"9":1.897,"10+":2.052},"oa":{"0":0.925,"1-100":0.925,"101-500":0.966,"501-1500":0.966,"1501-5000":1.276,"5000+":3.793},"genome":{"1.0":0.966,"1.0-1.4":1.724,"1.4-1.6":2.0,"1.6-1.8":5.224,"1.8+":140.621}}},"Метриакантозавр":{"floor":31,"spread":1.452,"s":102,"u":1160,"mn":32,"mx":4294,"m":45.0,"ua":47.0,"own":{"res":{"0":0.981,"1":0.981,"2":0.981,"3":0.981,"4":0.981,"5":0.981,"6":1.189,"7":1.189,"8":1.189,"9":1.389,"10+":1.978},"oa":{"0":0.878,"1-100":0.981,"101-500":0.981,"501-1500":0.981,"1501-5000":1.467,"5000+":4.644},"genome":{"1.0":0.778,"1.0-1.4":0.978,"1.4-1.6":1.111,"1.6-1.8":1.411,"1.8+":65.0}}},"Ородромеус":{"floor":2,"spread":2.5,"s":9,"u":517,"mn":4,"mx":94,"m":5,"ua":4.0},"Паразауролоф":{"floor":26,"spread":1.115,"s":80,"u":1429,"mn":26,"mx":95,"m":29.0,"ua":37.3,"own":{"res":{"0":1.0,"1":1.0,"2":1.0,"3":1.0,"4":1.0,"5":1.0,"6":1.0,"7":1.138,"8":1.335,"9":1.335,"10+":1.335},"oa":{"0":1.0,"1-100":1.0,"101-500":1.0,"501-1500":1.0,"1501-5000":1.379,"5000+":1.379}}},"Пахиринозавр":{"floor":11,"spread":5.545,"s":96,"u":1132,"mn":55,"mx":5001,"m":61.0,"ua":58.6,"own":{"res":{"0":1.0,"1":1.0,"2":1.0,"3":1.0,"4":1.082,"5":1.201,"6":1.201,"7":1.758,"8":1.758,"9":1.758,"10+":3.59},"oa":{"0":1.043,"1-100":1.043,"101-500":1.043,"501-1500":1.09,"1501-5000":2.096,"5000+":2.096}}},"Пахицефалозавр":{"floor":12,"spread":1.167,"s":72,"u":1101,"mn":12,"mx":550,"m":14.0,"ua":17.1,"own":{"res":{"0":1.367,"1":1.367,"2":1.367,"3":1.367,"4":1.367,"5":1.367,"6":1.714,"7":2.302,"8":2.302,"9":2.302,"10+":2.302},"oa":{"0":1.0,"1-100":1.045,"101-500":1.045,"501-1500":1.066,"1501-5000":1.066,"5000+":10.214}}},"Пситтакозавр":{"floor":1,"spread":8.5,"s":24,"u":397,"mn":2,"mx":495,"m":8.5,"ua":9.0},"Пуэрта":{"floor":55,"spread":1.109,"s":119,"u":1598,"mn":55,"mx":220,"m":61,"ua":57.7,"own":{"res":{"0":1.002,"1":1.002,"2":1.002,"3":1.002,"4":1.048,"5":1.048,"6":1.048,"7":1.048,"8":1.048,"9":1.238,"10+":1.852},"oa":{"0":1.0,"1-100":1.0,"101-500":1.0,"501-1500":1.0,"1501-5000":1.0,"5000+":1.0}}},"Спинозавр":{"floor":68,"spread":1.382,"s":436,"u":1165,"mn":12,"mx":13287,"m":94.0,"ua":99.0,"own":{"res":{"0":0.809,"1":1.032,"2":1.17,"3":1.722,"4":1.722,"5":1.819,"6":2.92,"7":2.926,"8":3.331,"9":3.331,"10+":3.331},"oa":{"0":0.901,"1-100":0.901,"101-500":0.936,"501-1500":0.989,"1501-5000":1.612,"5000+":4.011}}},"Стегозавр":{"floor":49,"spread":1.122,"s":123,"u":1739,"mn":50,"mx":6296,"m":55,"ua":52.6,"own":{"res":{"0":0.909,"1":1.0,"2":1.0,"3":1.0,"4":1.0,"5":1.255,"6":1.329,"7":1.329,"8":1.329,"9":1.329,"10+":2.418},"oa":{"0":1.0,"1-100":1.0,"101-500":1.0,"501-1500":1.0,"1501-5000":1.891,"5000+":1.891}}},"Стиракозавр":{"floor":35,"spread":1.143,"s":66,"u":1930,"mn":36,"mx":3777,"m":40.0,"ua":37.4,"own":{"res":{"0":1.0,"1":1.0,"2":1.0,"3":1.0,"4":1.0,"5":1.0,"6":1.158,"7":1.158,"8":1.25,"9":2.2,"10+":3.3},"oa":{"0":1.037,"1-100":1.037,"101-500":1.037,"501-1500":1.163,"1501-5000":7.325,"5000+":7.325}}},"Теризинозавр":{"floor":55,"spread":1.109,"s":274,"u":1059,"mn":10,"mx":20922,"m":61.0,"ua":69.0,"own":{"res":{"0":1.0,"1":1.0,"2":1.0,"3":1.18,"4":1.721,"5":1.803,"6":2.525,"7":2.56,"8":2.56,"9":2.56,"10+":6.852},"oa":{"0":1.012,"1-100":1.012,"101-500":1.012,"501-1500":1.012,"1501-5000":1.793,"5000+":1.793},"genome":{"1.0":1.0,"1.0-1.4":1.0,"1.4-1.6":1.705,"1.6-1.8":2.705,"1.8+":221.582}}},"Тираннозавр":{"floor":55,"spread":1.345,"s":345,"u":854,"mn":3,"mx":15510,"m":74,"ua":83.3,"own":{"res":{"0":0.824,"1":0.973,"2":1.338,"3":1.676,"4":1.676,"5":1.676,"6":2.655,"7":3.189,"8":4.014,"9":4.014,"10+":4.014},"oa":{"0":0.962,"1-100":0.962,"101-500":0.963,"501-1500":0.963,"1501-5000":1.405,"5000+":4.757}}},"Торвозавр":{"floor":38,"spread":1.237,"s":145,"u":748,"mn":10,"mx":4290,"m":47,"ua":53.9,"own":{"res":{"0":0.921,"1":0.921,"2":0.921,"3":1.448,"4":1.448,"5":1.836,"6":1.836,"7":1.836,"8":1.872,"9":3.043,"10+":3.138},"oa":{"0":0.915,"1-100":0.961,"101-500":0.961,"501-1500":1.17,"1501-5000":1.319,"5000+":9.234}}},"Трицератопс":{"floor":55,"spread":1.109,"s":84,"u":1370,"mn":55,"mx":5429,"m":61.0,"ua":60.2,"own":{"res":{"0":1.0,"1":1.0,"2":1.0,"3":1.0,"4":1.0,"5":1.519,"6":1.519,"7":1.582,"8":1.639,"9":2.123,"10+":2.164},"oa":{"0":1.0,"1-100":1.0,"101-500":1.0,"501-1500":1.113,"1501-5000":1.113,"5000+":1.113}}},"Троодон":{"floor":5,"spread":1.8,"s":53,"u":362,"mn":8,"mx":2662,"m":9,"ua":17.8,"own":{"res":{"0":1.133,"1":1.133,"2":1.133,"3":1.133,"4":1.133,"5":1.133,"6":1.133,"7":1.133,"8":1.133,"9":1.133,"10+":2.444},"oa":{"0":1.0,"1-100":1.0,"101-500":1.0,"501-1500":1.111,"1501-5000":4.444,"5000+":8.889}}},"Уранозавр":{"floor":38,"spread":1.132,"s":37,"u":1523,"mn":39,"mx":3451,"m":43,"ua":44.8,"own":{"oa":{"0":0.988,"1-100":0.988,"101-500":1.006,"501-1500":1.006,"1501-5000":18.744,"5000+":66.326}}},"Цератозавр":{"floor":30,"spread":1.1,"s":90,"u":1206,"mn":28,"mx":2830,"m":33.0,"ua":34.8,"own":{"res":{"0":1.0,"1":1.0,"2":1.0,"3":1.0,"4":1.227,"5":1.348,"6":1.871,"7":1.871,"8":1.871,"9":2.835,"10+":2.835},"oa":{"0":1.071,"1-100":1.071,"101-500":1.071,"501-1500":1.071,"1501-5000":2.424,"5000+":2.424}}},"Шантунгозавр":{"floor":60,"spread":1.117,"s":196,"u":1742,"mn":2,"mx":10648,"m":67.0,"ua":72.4,"own":{"res":{"0":1.054,"1":1.054,"2":1.054,"3":1.054,"4":1.448,"5":1.478,"6":1.552,"7":1.785,"8":1.785,"9":3.137,"10+":3.137},"oa":{"0":1.0,"1-100":1.0,"101-500":1.0,"501-1500":1.015,"1501-5000":1.478,"5000+":1.888},"genome":{"1.0":0.997,"1.0-1.4":0.997,"1.4-1.6":1.075,"1.6-1.8":1.567,"1.8+":158.925}}},"Ютараптор":{"floor":13,"spread":1.538,"s":332,"u":379,"mn":13,"mx":11562,"m":20.0,"ua":45.3,"own":{"res":{"0":0.9,"1":0.95,"2":2.15,"3":2.592,"4":2.592,"5":2.592,"6":2.814,"7":2.814,"8":2.814,"9":2.814,"10+":3.775},"oa":{"0":0.75,"1-100":0.9,"101-500":0.9,"501-1500":1.25,"1501-5000":3.05,"5000+":19.25},"genome":{"1.0":0.9,"1.0-1.4":2.75,"1.4-1.6":2.75,"1.6-1.8":15.125,"1.8+":425.0}}},"Ютираннус":{"floor":33,"spread":1.182,"s":97,"u":863,"mn":33,"mx":3671,"m":39,"ua":39.2,"own":{"res":{"0":0.931,"1":0.931,"2":0.931,"3":0.931,"4":1.077,"5":1.155,"6":1.155,"7":1.155,"8":1.155,"9":1.269,"10+":1.782},"oa":{"0":0.923,"1-100":0.999,"101-500":0.999,"501-1500":0.999,"1501-5000":1.179,"5000+":27.538}}}},"global":{"res":{"0":0.97,"1":1.0,"2":1.01,"3":1.01,"4":1.2,"5":1.308,"6":1.473,"7":1.493,"8":1.671,"9":1.936,"10+":2.075},"oa":{"0":1.0,"1-100":1.0,"101-500":1.0,"501-1500":1.0,"1501-5000":1.724,"5000+":6.787},"genome":{"1.0":1.0,"1.0-1.4":1.093,"1.4-1.6":1.668,"1.6-1.8":3.511,"1.8+":108.71}}};
+const SPECIES = DB.species;
+const GLOBAL = DB.global;
+
+const RES_KEYS = ['0','1','2','3','4','5','6','7','8','9','10+'];
+const GENOME_OPTIONS = [
+  {value:'1.0',     label:'1.0 — стандартный'},
+  {value:'1.0-1.4', label:'1.0–1.4'},
+  {value:'1.4-1.6', label:'1.4–1.6'},
+  {value:'1.6-1.8', label:'1.6–1.8'},
+  {value:'1.8+',    label:'1.8+ — редкий'},
+];
+
+const speciesSelect = document.getElementById('species');
+const discountSelect = document.getElementById('discount');
+const resSelect = document.getElementById('resurrections');
+const oaInput = document.getElementById('oa');
+const genomeSelect = document.getElementById('genome');
+
+const names = Object.keys(SPECIES).sort((a,b)=>a.localeCompare(b,'ru'));
+for(const name of names){
+  const d = SPECIES[name];
+  const opt = document.createElement('option');
+  opt.value = name;
+  opt.textContent = name + ' (' + (d.s+d.u).toLocaleString('ru-RU') + ' набл.)';
+  speciesSelect.appendChild(opt);
+}
+
+for(let p=5;p<=15;p++){
+  const opt = document.createElement('option');
+  opt.value = p; opt.textContent = '−' + p + '%';
+  discountSelect.appendChild(opt);
+}
+discountSelect.value = 10;
+
+for(const k of RES_KEYS){
+  const opt = document.createElement('option');
+  opt.value = k; opt.textContent = k;
+  resSelect.appendChild(opt);
+}
+resSelect.value = '1';
+
+for(const g of GENOME_OPTIONS){
+  const opt = document.createElement('option');
+  opt.value = g.value; opt.textContent = g.label;
+  genomeSelect.appendChild(opt);
+}
+genomeSelect.value = '1.0';
+
+function fmt(n){
+  if(n===null || n===undefined || isNaN(n)) return '—';
+  return Math.round(n).toLocaleString('ru-RU');
+}
+
+function resKey(n){ return n < 10 ? String(n) : '10+'; }
+
+function oaKey(v){
+  if(v <= 0) return '0';
+  if(v <= 100) return '1-100';
+  if(v <= 500) return '101-500';
+  if(v <= 1500) return '501-1500';
+  if(v <= 5000) return '1501-5000';
+  return '5000+';
+}
+
+// достаёт коэффициент: сначала пробует таблицу вида, потом общую, помечает источник
+function lookupFactor(species, kind, key){
+  const own = species.own && species.own[kind];
+  if(own && own[key] !== undefined){
+    return {mult: own[key], source: 'own'};
+  }
+  const glob = GLOBAL[kind];
+  if(glob && glob[key] !== undefined){
+    return {mult: glob[key], source: 'global'};
+  }
+  return {mult: 1, source: 'global'};
+}
+
+function render(){
+  const name = speciesSelect.value;
+  const d = SPECIES[name];
+  if(!d) return;
+
+  const total = d.s + d.u;
+  const rate = total>0 ? (d.s/total*100) : 0;
+
+  document.getElementById('miniStats').innerHTML =
+    '<div class="cell"><div class="k">Продано</div><div class="v">'+d.s.toLocaleString('ru-RU')+'</div></div>'+
+    '<div class="cell"><div class="k">Без ставок</div><div class="v">'+d.u.toLocaleString('ru-RU')+'</div></div>'+
+    '<div class="cell"><div class="k">Диапазон продаж</div><div class="v">'+fmt(d.mn)+'–'+fmt(d.mx)+'</div></div>'+
+    '<div class="cell"><div class="k">Успешность</div><div class="v">'+rate.toFixed(1)+'%</div></div>';
+
+  document.getElementById('rateBar').style.width = Math.min(100,rate)+'%';
+  document.getElementById('rateHint').textContent =
+    total>0 ? 'Из ' + total.toLocaleString('ru-RU') + ' выставленных лотов этого вида ставку получили ' + rate.toFixed(1) + '%.'
+             : 'Недостаточно данных по этому виду.';
+
+  updatePrice();
+}
+
+function updatePrice(){
+  const name = speciesSelect.value;
+  const d = SPECIES[name];
+  if(!d) return;
+
+  const disc = parseFloat(discountSelect.value) || 0;
+  const oaVal = Math.max(0, parseFloat(oaInput.value) || 0);
+
+  const rf = lookupFactor(d, 'res', resSelect.value);
+  const of = lookupFactor(d, 'oa', oaKey(oaVal));
+  const gf = lookupFactor(d, 'genome', genomeSelect.value);
+
+  const combined = rf.mult * of.mult * gf.mult;
+
+  const floor = d.floor || 0;
+  const spread = d.spread || 1;
+  const typicalFinalPrice = floor * spread * combined;           // итоговая цена (с наценкой аукциона), как она попадёт в историю продаж
+  const discountedFinal = typicalFinalPrice * (1 - disc/100);
+  let listingPrice = Math.round(discountedFinal / 1.1);          // ЭТО вписывается в форму лота
+  const belowFloor = listingPrice < floor;
+  if(belowFloor) listingPrice = floor;
+  const finalPrice = Math.round(listingPrice * 1.1);             // сколько спишется/зачтётся с наценкой
+
+  // бейджи: индивидуальный коэффициент вида или общий
+  const badgeRow = document.getElementById('badgeRow');
+  const labelFor = {res:'Воскрешения', oa:'ОА', genome:'Геном'};
+  const parts = [rf, of, gf];
+  const kinds = ['res','oa','genome'];
+  badgeRow.innerHTML = kinds.map((k,i)=>{
+    const p = parts[i];
+    const cls = p.source === 'own' ? 'own' : 'global';
+    const txt = p.source === 'own' ? 'по виду' : 'общий';
+    return '<span class="badge '+cls+'">'+labelFor[k]+': '+txt+' ×'+p.mult.toFixed(2)+'</span>';
+  }).join('');
+
+  document.getElementById('tagSpecies').textContent = name;
+  document.getElementById('tagPrice').innerHTML = fmt(listingPrice) + ' <small>DC</small>';
+  document.getElementById('tagFloor').textContent = 'Минимум в форме лота: ' + fmt(floor) + ' DC';
+  document.getElementById('tagFinal').textContent = 'Аукцион добавит 10% — итоговая цена: ' + fmt(finalPrice) + ' DC';
+
+  const noteEl = document.getElementById('tagNote');
+  const unsoldAvg = d.ua !== null ? d.ua * 1.1 * combined : null;
+
+  let dotClass = 'good', msg;
+  if(belowFloor){
+    dotClass = 'warn';
+    msg = 'Расчётная цена со скидкой ушла ниже минимума — округлено до ' + fmt(floor) + ' DC в форме лота (итоговая ' + fmt(finalPrice) + ' DC), ниже аукцион не позволит.';
+  } else if(d.m === null){
+    dotClass = 'warn';
+    msg = 'По этому виду ещё не было продаж — ориентир построен только на минимальной цене и общих коэффициентах.';
+  } else if(unsoldAvg !== null && finalPrice > unsoldAvg){
+    dotClass = 'bad';
+    msg = 'Выше типичной цены непроданных лотов с такими же признаками (' + fmt(unsoldAvg) + ' DC). Стоит увеличить скидку.';
+  } else if(finalPrice <= typicalFinalPrice * 0.7){
+    dotClass = 'good';
+    msg = 'Заметно ниже типичной цены продажи для таких признаков — лот, скорее всего, уйдёт быстро.';
+  } else {
+    dotClass = 'warn';
+    msg = 'В пределах типичной цены, но не с большим запасом — ставки возможны, но не мгновенно.';
+  }
+  if(genomeSelect.value === '1.8+' || genomeSelect.value === '1.6-1.8'){
+    msg += ' Экземпляры с таким геномом — штучный товар: наблюдений мало, разброс цен огромный, ориентируйтесь на расчёт очень условно.';
+  }
+  noteEl.innerHTML = '<span class="dot '+dotClass+'"></span><span>'+msg+'</span>';
+
+  const vals = [floor, typicalFinalPrice, unsoldAvg||0, finalPrice];
+  const maxVal = Math.max(...vals, 1);
+  document.getElementById('barFloor').style.width = (floor/maxVal*100)+'%';
+  document.getElementById('barSold').style.width = (typicalFinalPrice/maxVal*100)+'%';
+  document.getElementById('barUnsold').style.width = (unsoldAvg!==null ? (unsoldAvg/maxVal*100) : 0)+'%';
+  document.getElementById('barYou').style.width = (finalPrice/maxVal*100)+'%';
+  document.getElementById('valFloor').textContent = fmt(floor)+' DC';
+  document.getElementById('valSold').textContent = fmt(typicalFinalPrice)+' DC';
+  document.getElementById('valUnsold').textContent = unsoldAvg!==null ? fmt(unsoldAvg)+' DC' : '—';
+  document.getElementById('valYou').textContent = fmt(finalPrice)+' DC';
+
+  document.getElementById('factorSummary').innerHTML =
+    'Минимум <b>'+fmt(floor)+' DC</b> × типичная наценка вида <b>×'+spread.toFixed(2)+'</b> × признаки лота <b>×'+combined.toFixed(2)+'</b> = типичная цена продажи <b>'+fmt(typicalFinalPrice)+' DC</b>, затем скидка <b>−'+disc+'%</b> → впишите в форму <b>'+fmt(listingPrice)+' DC</b>, аукцион покажет её как <b>'+fmt(finalPrice)+' DC</b> (+10%).';
+}
+
+speciesSelect.addEventListener('change', render);
+discountSelect.addEventListener('change', updatePrice);
+resSelect.addEventListener('change', updatePrice);
+oaInput.addEventListener('input', updatePrice);
+genomeSelect.addEventListener('change', updatePrice);
+
+const defaultSpecies = names.reduce((best,n)=> (SPECIES[n].s+SPECIES[n].u) > (SPECIES[best].s+SPECIES[best].u) ? n : best, names[0]);
+speciesSelect.value = defaultSpecies;
+render();
+</script>
+</body>
+</html>
